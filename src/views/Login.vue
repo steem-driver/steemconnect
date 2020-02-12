@@ -23,7 +23,15 @@
             {{ user }}
           </option>
         </select>
-        <label for="password">Wallet password</label>
+        <label for="password">
+          Keychain password
+          <span
+            class="tooltipped tooltipped-n tooltipped-multiline"
+            :aria-label="TOOLTIP_LOGIN_ENCRYPTION_KEY"
+          >
+            <span class="iconfont icon-info" />
+          </span>
+        </label>
         <div v-if="dirty.key && !!errors.key" class="error mb-2">
           {{ errors.key }}
         </div>
@@ -31,6 +39,8 @@
           id="password"
           v-model.trim="key"
           type="password"
+          autocorrect="off"
+          autocapitalize="none"
           autocomplete="current-password"
           class="form-control input-lg input-block mb-2"
           :class="{ 'mb-4': !error }"
@@ -62,7 +72,11 @@ import triplesec from 'triplesec';
 import { getKeychain } from '@/helpers/keychain';
 import { jsonParse } from '@/helpers/utils';
 import { getAuthority } from '@/helpers/auth';
-import { ERROR_INVALID_CREDENTIALS, ERROR_INVALID_ENCRYPTION_KEY } from '@/helpers/messages';
+import {
+  ERROR_INVALID_CREDENTIALS,
+  ERROR_INVALID_ENCRYPTION_KEY,
+  TOOLTIP_LOGIN_ENCRYPTION_KEY,
+} from '@/helpers/messages.json';
 
 export default {
   data() {
@@ -76,6 +90,7 @@ export default {
       isLoading: false,
       redirect: this.$route.query.redirect,
       authority: getAuthority(this.$route.query.authority),
+      TOOLTIP_LOGIN_ENCRYPTION_KEY,
     };
   },
   computed: {
@@ -107,7 +122,7 @@ export default {
       }
 
       if (!key) {
-        current.key = 'Wallet password is required.';
+        current.key = 'Keychain password is required.';
       }
 
       return current;
@@ -137,8 +152,9 @@ export default {
       this.dirty[name] = true;
     },
     submitForm() {
-      this.isLoading = true;
+      const { authority } = this;
       const encryptedKeys = this.keychain[this.username];
+      this.isLoading = true;
 
       triplesec.decrypt(
         {
@@ -154,10 +170,14 @@ export default {
             return;
           }
 
-          this.login({
-            username: this.username,
-            keys: jsonParse(buff.toString()),
-          })
+          const keys = jsonParse(buff.toString());
+          if (authority && !keys[authority]) {
+            this.isLoading = false;
+            this.error = `You need to import your account using your password or ${authority} key to do this request. Click "Import account" button to proceed.`;
+            return;
+          }
+
+          this.login({ username: this.username, keys })
             .then(() => {
               const { redirect } = this.$route.query;
               this.$router.push(redirect || '/');

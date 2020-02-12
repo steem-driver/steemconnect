@@ -5,7 +5,7 @@
       <Header :title="`Log in request (${authority})`" />
       <div v-if="!failed" class="p-4 after-header">
         <div class="container-sm mx-auto">
-          <OpenExternal v-if="isWeb && !failed && !signature" :uri="uri" />
+          <OpenExternal v-if="isWeb && !failed && !signature" :uri="uri" class="hide-sm" />
           <div v-if="!failed && !signature">
             <div class="mb-4">
               <div class="mb-4 text-center" v-if="app && appProfile">
@@ -26,10 +26,10 @@
             <div class="mb-4">
               <router-link
                 :to="{ name: 'login', query: { redirect: this.$route.fullPath } }"
-                class="btn btn-large mr-2 mb-2"
+                class="btn btn-large btn-blue mr-2 mb-2"
                 v-if="!username"
               >
-                Log in
+                Continue
               </router-link>
               <button
                 type="submit"
@@ -38,9 +38,9 @@
                 @click="handleSubmit"
                 v-else
               >
-                Sign
+                Log in
               </button>
-              <button class="btn btn-large btn-danger mb-2" @click="handleReject">
+              <button class="btn btn-large mb-2" @click="handleReject">
                 Cancel
               </button>
             </div>
@@ -67,6 +67,7 @@ import {
   signComplete,
   isValidUrl,
   REQUEST_ID_PARAM,
+  b64uEnc,
 } from '@/helpers/utils';
 import { getAuthority } from '@/helpers/auth';
 
@@ -96,7 +97,7 @@ export default {
         ? this.$route.query.response_type
         : 'token',
       state: this.$route.query.state,
-      scope: ['login', 'posting', 'offline'].includes(this.$route.query.scope)
+      scope: ['login', 'posting'].includes(this.$route.query.scope)
         ? this.$route.query.scope
         : 'login',
       uri: `steem://login-request/${this.$route.params.clientId}${buildSearchParams(this.$route)}`,
@@ -116,7 +117,7 @@ export default {
   },
   mounted() {
     if (
-      ['posting', 'offline'].includes(this.scope) &&
+      this.scope === 'posting' &&
       !isChromeExtension() &&
       this.clientId &&
       this.username &&
@@ -169,20 +170,16 @@ export default {
           authority: this.authority,
         });
         [this.signature] = signedMessageObj.signatures;
-        const token = btoa(JSON.stringify(signedMessageObj));
+        const token = b64uEnc(JSON.stringify(signedMessageObj));
         if (this.requestId) {
           signComplete(this.requestId, null, token);
-
-          if (isChromeExtension()) {
-            window.close();
-          }
         }
         if (!isChromeExtension()) {
           let { callback } = this;
           callback += this.responseType === 'code' ? `?code=${token}` : `?access_token=${token}`;
           callback += `&username=${this.username}`;
           if (this.responseType !== 'code') callback += '&expires_in=604800';
-          if (this.state) callback += `&state=${this.state}`;
+          if (this.state) callback += `&state=${encodeURIComponent(this.state)}`;
 
           if (isElectron()) {
             openExternal(callback);
@@ -198,9 +195,6 @@ export default {
         if (this.requestId) {
           signComplete(this.requestId, err, null);
         }
-        if (isChromeExtension()) {
-          window.close();
-        }
         this.loading = false;
       }
     },
@@ -209,10 +203,7 @@ export default {
       if (requestId) {
         signComplete(requestId, 'Request canceled', null);
       }
-
-      if (isChromeExtension()) {
-        window.close();
-      } else {
+      if (!isChromeExtension()) {
         this.$router.push('/');
       }
     },

@@ -14,11 +14,11 @@ export const isChromeExtension = () =>
 
 export const isWeb = () => !isChromeExtension() && !isElectron();
 
-export function jsonParse(input) {
+export function jsonParse(input, fallback) {
   try {
     return JSON.parse(input);
   } catch (err) {
-    return {};
+    return fallback || {};
   }
 }
 
@@ -54,7 +54,14 @@ export function legacyUriToParsedSteemUri(uri) {
     if (operations[opName]) {
       const opParams = Object.keys(operations[opName].schema).reduce((acc, b) => {
         if (!queryParams[b]) return acc;
-        return { ...acc, [b]: queryParams[b] };
+        let value = queryParams[b];
+        if (operations[opName].schema[b] && operations[opName].schema[b].type) {
+          if (['array', 'object'].includes(operations[opName].schema[b].type))
+            value = jsonParse(value, value);
+          if (operations[opName].schema[b].type === 'bool')
+            value = ['true', true, 1, '1'].includes(value);
+        }
+        return { ...acc, [b]: value };
       }, {});
       const params = { callback: queryParams.redirect_uri };
       const b64Uri = encodeOps([[opName, opParams]], params);
@@ -76,6 +83,11 @@ function processValue(schema, key, value, { vestsToSP }) {
         return `${(parseFloat(realValue) / vestsToSP).toFixed(6)} VESTS`;
       if (realValue.indexOf('STEEM') !== -1) return `${parseFloat(realValue).toFixed(3)} STEEM`;
       if (realValue.indexOf('SBD') !== -1) return `${parseFloat(realValue).toFixed(3)} SBD`;
+      return realValue;
+    case 'int':
+      return parseInt(realValue, 10);
+    case 'bool':
+      if (value === 'false' || value === false) return false;
       return realValue;
     default:
       return realValue;
@@ -123,6 +135,7 @@ export function signComplete(requestId, err, res) {
       args: [err, res],
     },
   });
+  window.close();
 }
 
 export function isValidUrl(string) {
@@ -146,3 +159,9 @@ export function getLowestAuthorityRequired(tx) {
   });
   return authority;
 }
+
+const b64uLookup = { '/': '_', _: '/', '+': '-', '-': '+', '=': '.', '.': '=' };
+
+export const b64uEnc = str => btoa(str).replace(/(\+|\/|=)/g, m => b64uLookup[m]);
+
+export const b64uDec = str => atob(str.replace(/(-|_|\.)/g, m => b64uLookup[m]));

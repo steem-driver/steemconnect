@@ -31,6 +31,8 @@
             v-model.trim="password"
             id="password"
             type="password"
+            autocorrect="off"
+            autocapitalize="none"
             autocomplete="current-password"
             class="form-control input-lg input-block mb-2"
             @blur="handleBlur('password')"
@@ -49,7 +51,15 @@
           </button>
         </div>
         <div v-if="step === 2">
-          <label for="key">Wallet password</label>
+          <label for="key">
+            Keychain password
+            <span
+              class="tooltipped tooltipped-n tooltipped-multiline"
+              :aria-label="TOOLTIP_IMPORT_ENCRYPTION_KEY"
+            >
+              <span class="iconfont icon-info" />
+            </span>
+          </label>
           <div v-if="dirty.key && !!errors.key" class="error mb-2">
             {{ errors.key }}
           </div>
@@ -58,6 +68,8 @@
             id="key"
             v-model.trim="key"
             type="password"
+            autocorrect="off"
+            autocapitalize="none"
             autocomplete="new-password"
             class="form-control input-lg input-block mb-2"
             @blur="handleBlur('key')"
@@ -71,12 +83,14 @@
             id="key-confirmation"
             v-model.trim="keyConfirmation"
             type="password"
+            autocorrect="off"
+            autocapitalize="none"
             autocomplete="new-password"
             class="form-control input-lg input-block mb-2"
             @blur="handleBlur('keyConfirmation')"
           />
           <legend class="mb-4 d-block">
-            The wallet password will be required to unlock your account for usage.
+            The keychain password will be required to unlock your account for usage.
           </legend>
           <button
             :disabled="submitDisabled || isLoading"
@@ -105,7 +119,7 @@ import triplesec from 'triplesec';
 import PasswordValidator from 'password-validator';
 import { credentialsValid, getKeys, getAuthority } from '@/helpers/auth';
 import { addToKeychain, hasAccounts } from '@/helpers/keychain';
-import { ERROR_INVALID_CREDENTIALS } from '@/helpers/messages';
+import { ERROR_INVALID_CREDENTIALS, TOOLTIP_IMPORT_ENCRYPTION_KEY } from '@/helpers/messages.json';
 import { isWeb } from '@/helpers/utils';
 
 const passphraseSchema = new PasswordValidator();
@@ -113,6 +127,8 @@ const passphraseSchema = new PasswordValidator();
 passphraseSchema
   .is()
   .min(8)
+  .is()
+  .max(50)
   .has()
   .uppercase()
   .has()
@@ -128,10 +144,11 @@ export default {
         keyConfirmation: false,
       },
       error: '',
-      storeAccount: !isWeb,
+      storeAccount: !isWeb(),
       isLoading: false,
       redirect: this.$route.query.redirect,
       authority: getAuthority(this.$route.query.authority),
+      TOOLTIP_IMPORT_ENCRYPTION_KEY,
     };
   },
   computed: {
@@ -191,16 +208,16 @@ export default {
       }
 
       if (!key) {
-        current.key = 'Wallet password is required.';
+        current.key = 'Keychain password is required.';
       } else if (!passphraseSchema.validate(key)) {
         current.key =
-          'Wallet password has to be at least 8 characters long and contain lowercase letter and uppercase letter.';
+          'Keychain password has to be at least 8 characters long and contain lowercase letter and uppercase letter.';
       }
 
       if (!keyConfirmation) {
-        current.keyConfirmation = 'Wallet password confirmation is required.';
+        current.keyConfirmation = 'Keychain password confirmation is required.';
       } else if (keyConfirmation !== key) {
-        current.keyConfirmation = 'Wallet passwords do not match.';
+        current.keyConfirmation = 'Keychain passwords do not match.';
       }
 
       return current;
@@ -237,8 +254,14 @@ export default {
     async startLogin() {
       this.isLoading = true;
 
-      const { username, password } = this;
+      const { username, password, authority } = this;
       const keys = await getKeys(username, password);
+
+      if (authority && !keys[authority]) {
+        this.isLoading = false;
+        this.error = `You need to use master or ${authority} key to log in.`;
+        return;
+      }
 
       this.login({ username, keys })
         .then(() => {

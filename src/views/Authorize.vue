@@ -3,7 +3,11 @@
     <Header title="Authorize (active)" />
     <div class="p-4 after-header">
       <div class="container-sm mx-auto">
-        <OpenExternal v-if="!hasAuthority && isWeb && !failed && !transactionId" :uri="uri" />
+        <OpenExternal
+          v-if="!hasAuthority && isWeb && !failed && !transactionId"
+          :uri="uri"
+          class="hide-sm"
+        />
         <form
           v-if="!hasAuthority && !failed && !transactionId"
           @submit.prevent="handleSubmit"
@@ -22,6 +26,9 @@
               Giving active authority enables the authorized account to do fund transfers from your
               account, this should be used with utmost care.
             </div>
+            <div class="flash flash-warn mt-4" v-if="account.name && hasRequiredKey === false">
+              This transaction requires your <b>active</b> key.
+            </div>
           </div>
           <div class="mt-2">
             <router-link
@@ -29,10 +36,10 @@
                 name: 'login',
                 query: { redirect: this.$route.fullPath, authority: 'active' },
               }"
-              class="btn btn-large mr-2 mb-2"
-              v-if="!account.name"
+              class="btn btn-large btn-blue mr-2 mb-2"
+              v-if="!account.name || hasRequiredKey === false"
             >
-              Log in
+              Continue
             </router-link>
             <button
               type="submit"
@@ -42,7 +49,7 @@
             >
               Authorize
             </button>
-            <button class="btn btn-large btn-danger mb-2" @click="handleReject">
+            <button class="btn btn-large mb-2" @click="handleReject">
               Cancel
             </button>
           </div>
@@ -101,6 +108,9 @@ export default {
         return auths.indexOf(this.username) !== -1;
       }
       return false;
+    },
+    hasRequiredKey() {
+      return !!(this.$store.state.auth.username && this.$store.state.auth.keys.active);
     },
   },
   methods: {

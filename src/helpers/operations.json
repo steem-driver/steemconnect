@@ -45,7 +45,8 @@
         "defaultValue": "__signer"
       },
       "to": {
-        "type": "account"
+        "type": "account",
+        "defaultValue": "__signer"
       },
       "amount": {
         "type": "amount"
@@ -62,6 +63,27 @@
       },
       "vesting_shares": {
         "type": "amount"
+      }
+    }
+  },
+  "transfer_to_savings": {
+    "name": "Transfer to saving",
+    "authority": "active",
+    "schema": {
+      "from": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "to": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "amount": {
+        "type": "amount"
+      },
+      "memo": {
+        "type": "string",
+        "defaultValue": ""
       }
     }
   },
@@ -260,6 +282,39 @@
       }
     }
   },
+  "comment_options": {
+    "name": "Post or comment options",
+    "authority": "posting",
+    "schema": {
+      "author": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "permlink": {
+        "type": "string"
+      },
+      "allow_curation_rewards": {
+        "type": "bool",
+        "defaultValue": true
+      },
+      "allow_votes": {
+        "type": "bool",
+        "defaultValue": true
+      },
+      "max_accepted_payout": {
+        "type": "amount",
+        "defaultValue": "1000000.000 SBD"
+      },
+      "percent_steem_dollars": {
+        "type": "int",
+        "defaultValue": 10000
+      },
+      "extensions": {
+        "type": "array",
+        "defaultValue": []
+      }
+    }
+  },
   "custom_json": {
     "name": "Custom operation",
     "authority": "posting",
@@ -281,6 +336,19 @@
       }
     }
   },
+  "delete_comment": {
+    "name": "Delete comment",
+    "authority": "posting",
+    "schema": {
+      "author": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "permlink": {
+        "type": "string"
+      }
+    }
+  },
   "account_update": {
     "name": "Update account",
     "authority": "active",
@@ -294,6 +362,96 @@
       },
       "json_metadata": {
         "type": "json"
+      }
+    }
+  },
+  "account_update2": {
+    "name": "Update account",
+    "authority": "posting",
+    "schema": {
+      "account": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "memo_key": {
+        "type": "string"
+      },
+      "json_metadata": {
+        "type": "json"
+      },
+      "posting_json_metadata": {
+        "type": "json"
+      }
+    }
+  },
+  "create_proposal": {
+    "name": "Create proposal",
+    "authority": "active",
+    "schema": {
+      "creator": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "receiver": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "start_date": {
+        "type": "time"
+      },
+      "end_date": {
+        "type": "time"
+      },
+      "daily_pay": {
+        "type": "amount"
+      },
+      "subject": {
+        "type": "string"
+      },
+      "permlink": {
+        "type": "string"
+      },
+      "extensions": {
+        "type": "array",
+        "defaultValue": []
+      }
+    }
+  },
+  "remove_proposal": {
+    "name": "Remove proposal",
+    "authority": "active",
+    "schema": {
+      "proposal_owner": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "proposal_ids": {
+        "type": "array"
+      },
+      "extensions": {
+        "type": "array",
+        "defaultValue": []
+      }
+    }
+  },
+  "update_proposal_votes": {
+    "name": "Update proposal votes",
+    "authority": "active",
+    "schema": {
+      "voter": {
+        "type": "account",
+        "defaultValue": "__signer"
+      },
+      "proposal_ids": {
+        "type": "array"
+      },
+      "approve": {
+        "type": "bool",
+        "defaultValue": true
+      },
+      "extensions": {
+        "type": "array",
+        "defaultValue": []
       }
     }
   }

@@ -3,7 +3,7 @@
 function API() {
   this.MESSAGE_TAG = 'STEEMCONNECT_MESSAGE';
 
-  this.version = '0.1.3';
+  this.version = '0.1.5';
   this.callbacks = {};
 
   window.addEventListener('message', event => {
@@ -27,6 +27,7 @@ function API() {
 
   this.sign = (payload, callback) => this.send('sign', payload, callback);
   this.login = (payload, callback) => this.send('login', payload, callback);
+  this.open = (payload) => this.send('open', payload);
 }
 
 window._steemconnect = new API();

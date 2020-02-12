@@ -3,7 +3,12 @@
     <Header :title="title" />
     <div v-if="parsed && uriIsValid" class="p-4 after-header">
       <div class="container-sm mx-auto">
-        <OpenExternal v-if="isWeb && !failed && !transactionId" :withChrome="true" :uri="uri" />
+        <OpenExternal
+          v-if="isWeb && !failed && !transactionId"
+          :withChrome="true"
+          :uri="uri"
+          class="hide-sm"
+        />
         <Error v-if="!loading && failed" :error="error" />
         <Confirmation v-if="!loading && !!transactionId" :id="transactionId" />
         <div v-if="!failed && !transactionId">
@@ -17,13 +22,16 @@
             <span class="link-color">{{ parsed.params.callback | parseUrl }}</span
             >.
           </div>
+          <div class="flash flash-warn mb-4" v-if="username && hasRequiredKey === false">
+            This transaction requires your <b>{{ authority }}</b> key.
+          </div>
           <div class="mb-4">
             <router-link
-              :to="{ name: 'login', query: { redirect: this.$route.fullPath } }"
-              class="btn btn-large mr-2 mb-2"
-              v-if="!username"
+              :to="{ name: 'login', query: { redirect: this.$route.fullPath, authority } }"
+              class="btn btn-large btn-blue mr-2 mb-2"
+              v-if="!username || hasRequiredKey === false"
             >
-              Log in
+              Continue
             </router-link>
             <button
               type="submit"
@@ -34,8 +42,8 @@
             >
               {{ parsed.params.no_broadcast ? 'Sign' : 'Approve' }}
             </button>
-            <button class="btn btn-large btn-danger mb-2" @click="handleReject">
-              Reject
+            <button class="btn btn-large mb-2" @click="handleReject">
+              Cancel
             </button>
           </div>
         </div>
@@ -79,6 +87,7 @@ export default {
       uri: `steem://sign/${this.$route.params.pathMatch}${buildSearchParams(this.$route)}`,
       requestId: this.$route.query[REQUEST_ID_PARAM],
       authority: getAuthority(this.$route.query.authority),
+      hasRequiredKey: null,
     };
   },
   computed: {
@@ -100,6 +109,9 @@ export default {
     this.parseUri(this.uri);
     if (!this.authority && this.parsed && this.parsed.tx) {
       this.authority = getLowestAuthorityRequired(this.parsed.tx);
+      this.hasRequiredKey = !!(
+        this.$store.state.auth.username && this.$store.state.auth.keys[this.authority]
+      );
     }
   },
   methods: {
@@ -160,7 +172,7 @@ export default {
       }
 
       // TODO: Handle Chrome extension & desktop app redirect.
-      if (this.parsed.params.callback && isWeb()) {
+      if (confirmation && this.parsed.params.callback && isWeb()) {
         window.location = steemuri.resolveCallback(this.parsed.params.callback, {
           sig,
           id: confirmation.id || undefined,
@@ -175,10 +187,7 @@ export default {
       if (this.requestId) {
         signComplete(this.requestId, 'Request rejected', null);
       }
-
-      if (isChromeExtension()) {
-        window.close();
-      } else {
+      if (!isChromeExtension()) {
         this.$router.push('/');
       }
     },

@@ -4,6 +4,7 @@ import urlParse from 'url-parse';
 import qs from 'query-string';
 import { encodeOps, decode } from 'steem-uri';
 import operations from '@/helpers/operations.json';
+import wx from 'weixin-js-sdk';
 
 export const REQUEST_ID_PARAM = 'requestId';
 
@@ -13,6 +14,28 @@ export const isChromeExtension = () =>
   window.chrome && window.chrome.runtime && window.chrome.runtime.id;
 
 export const isWeb = () => !isChromeExtension() && !isElectron();
+
+export function isWeixinMiniProgram() {
+  const ua = window.navigator.userAgent.toLowerCase();
+  return new Promise(resolve => {
+    if (ua.indexOf('micromessenger') === -1) {
+      resolve(false);
+    } else {
+      window.wx = wx;
+      wx.miniProgram.getEnv(res => {
+        if (res.miniprogram) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    }
+  });
+}
+
+export function weixinNavigateBack() {
+  wx.miniProgram.navigateBack();
+}
 
 export function jsonParse(input, fallback) {
   try {

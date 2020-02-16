@@ -63,6 +63,8 @@ import {
   isWeb,
   isChromeExtension,
   isElectron,
+  isWeixinMiniProgram,
+  weixinNavigateBack,
   buildSearchParams,
   signComplete,
   isValidUrl,
@@ -142,8 +144,10 @@ export default {
         this.app = app;
         try {
           this.appProfile = JSON.parse(accounts[0].json_metadata).profile;
+          const isWeixin = await isWeixinMiniProgram();
           if (
             !isChromeExtension() &&
+            !isWeixin &&
             (!this.appProfile.redirect_uris.includes(this.callback) || !isValidUrl(this.callback))
           ) {
             this.failed = true;
@@ -175,17 +179,22 @@ export default {
           signComplete(this.requestId, null, token);
         }
         if (!isChromeExtension()) {
-          let { callback } = this;
-          callback += this.responseType === 'code' ? `?code=${token}` : `?access_token=${token}`;
-          callback += `&username=${this.username}`;
-          if (this.responseType !== 'code') callback += '&expires_in=604800';
-          if (this.state) callback += `&state=${encodeURIComponent(this.state)}`;
-
-          if (isElectron()) {
-            openExternal(callback);
-            this.$router.push('/');
+          const isWeixin = await isWeixinMiniProgram();
+          if (isWeixin) {
+            weixinNavigateBack();
           } else {
-            window.location = callback;
+            let { callback } = this;
+            callback += this.responseType === 'code' ? `?code=${token}` : `?access_token=${token}`;
+            callback += `&username=${this.username}`;
+            if (this.responseType !== 'code') callback += '&expires_in=604800';
+            if (this.state) callback += `&state=${encodeURIComponent(this.state)}`;
+
+            if (isElectron()) {
+              openExternal(callback);
+              this.$router.push('/');
+            } else {
+              window.location = callback;
+            }
           }
         }
       } catch (err) {

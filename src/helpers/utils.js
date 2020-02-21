@@ -21,7 +21,6 @@ export function isWeixinMiniProgram() {
     if (ua.indexOf('micromessenger') === -1) {
       resolve(false);
     } else {
-      window.wx = wx;
       wx.miniProgram.getEnv(res => {
         if (res.miniprogram) {
           resolve(true);
@@ -35,6 +34,11 @@ export function isWeixinMiniProgram() {
 
 export function weixinNavigateBack() {
   wx.miniProgram.navigateBack();
+}
+
+export function weixinSendMessage(data) {
+  wx.miniProgram.postMessage({ data });
+  weixinNavigateBack();
 }
 
 export function jsonParse(input, fallback) {

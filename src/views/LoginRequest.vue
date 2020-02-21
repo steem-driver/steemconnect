@@ -64,7 +64,7 @@ import {
   isChromeExtension,
   isElectron,
   isWeixinMiniProgram,
-  weixinNavigateBack,
+  weixinSendMessage,
   buildSearchParams,
   signComplete,
   isValidUrl,
@@ -163,6 +163,7 @@ export default {
     async handleSubmit() {
       this.loading = true;
       this.showLoading = true;
+      const isWeixin = await isWeixinMiniProgram();
 
       try {
         const loginObj = {};
@@ -179,9 +180,15 @@ export default {
           signComplete(this.requestId, null, token);
         }
         if (!isChromeExtension()) {
-          const isWeixin = await isWeixinMiniProgram();
           if (isWeixin) {
-            weixinNavigateBack();
+            weixinSendMessage({
+              context: 'login',
+              ok: true,
+              err: null,
+              username: this.username,
+              token,
+              expired_in: 604800,
+            });
           } else {
             let { callback } = this;
             callback += this.responseType === 'code' ? `?code=${token}` : `?access_token=${token}`;
@@ -205,6 +212,16 @@ export default {
           signComplete(this.requestId, err, null);
         }
         this.loading = false;
+        if (isWeixin) {
+          weixinSendMessage({
+            context: 'login',
+            ok: false,
+            err,
+            username: this.username,
+            token: null,
+            expired_in: null,
+          });
+        }
       }
     },
     handleReject() {

@@ -188,14 +188,17 @@ export default {
         }
         if (!isChromeExtension()) {
           if (isWebView) {
-            sendMessage({
-              context: 'login',
-              ok: true,
-              err: null,
-              username: this.username,
-              token,
-              expired_in: 604800,
-            }, this.callback_method);
+            sendMessage(
+              {
+                context: 'login',
+                ok: true,
+                err: null,
+                username: this.username,
+                token,
+                expired_in: 604800,
+              },
+              this.callback_method,
+            );
           } else {
             let { callback } = this;
             callback += this.responseType === 'code' ? `?code=${token}` : `?access_token=${token}`;
@@ -220,14 +223,17 @@ export default {
         }
         this.loading = false;
         if (isWebView) {
-          sendMessage({
-            context: 'login',
-            ok: false,
-            err,
-            username: this.username,
-            token: null,
-            expired_in: null,
-          }, this.callback_method);
+          sendMessage(
+            {
+              context: 'login',
+              ok: false,
+              err,
+              username: this.username,
+              token: null,
+              expired_in: null,
+            },
+            this.callback_method,
+          );
         }
       }
     },

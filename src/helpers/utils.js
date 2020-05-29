@@ -46,58 +46,58 @@ const rulesAndroid = [
   // Android KitKat to lollipop webview will put {version}.0.0.0
   'Android.*(wv|.0.0.0)',
   // old chrome android webview agent
-  'Linux; U; Android'
-]
-const androidWebviewRegExp = new RegExp('(' + rulesAndroid.join('|') + ')', 'ig')
+  'Linux; U; Android',
+];
+const androidWebviewRegExp = new RegExp(`(${rulesAndroid.join('|')})`, 'ig');
 
 const rulesIOS = [
   // iOS webview will be the same as safari but missing "Safari"
-  '(iPhone|iPod|iPad)(?!.*Safari)'
-]
-const iOSWebviewRegExp = new RegExp('(' + rulesIOS.join('|') + ')', 'ig')
+  '(iPhone|iPod|iPad)(?!.*Safari)',
+];
+const iOSWebviewRegExp = new RegExp(`(${rulesIOS.join('|')})`, 'ig');
 
 export function isAndroidWebview() {
-  const ua = window.navigator.userAgent
-  return !!ua.match(androidWebviewRegExp)
+  const ua = window.navigator.userAgent;
+  return !!ua.match(androidWebviewRegExp);
 }
 
 export function isIOSWebview() {
-  const ua = window.navigator.userAgent
-  return !!ua.match(iOSWebviewRegExp)
+  const ua = window.navigator.userAgent;
+  return !!ua.match(iOSWebviewRegExp);
 }
 
 function androidSendMessage(data, method) {
   if (method && data) {
-    if (android && android[method]) {
-      android[method](data)
+    if (window.android && window.android[method]) {
+      window.android[method](data);
     } else {
-      console.error(`android object or method ${method} is not defined`)
+      console.error(`android object or method ${method} is not defined`);
     }
   } else {
-    console.error('method and data cannot be empty', method, data)
+    console.error('method and data cannot be empty', method, data);
   }
 }
 
 function iOSSendMessage(data, method) {
   if (method && data) {
-    if (webkit && webkit[method]) {
-      webkit.messageHandlers[method].postMessage(data)
+    if (window.webkit && window.webkit[method]) {
+      window.webkit.messageHandlers[method].postMessage(data);
     } else {
-      console.error(`webkit object or method ${method} is not defined`)
+      console.error(`webkit object or method ${method} is not defined`);
     }
   } else {
-    console.error('method and data cannot be empty', method, data)
+    console.error('method and data cannot be empty', method, data);
   }
 }
 
 export async function sendMessage(data, method) {
-  const isWeixin = await isWeixinMiniProgram()
+  const isWeixin = await isWeixinMiniProgram();
   if (isWeixin) {
-    weixinSendMessage(data)
+    weixinSendMessage(data);
   } else if (isIOSWebview()) {
-    iOSSendMessage(data, method)
+    iOSSendMessage(data, method);
   } else if (isAndroidWebview()) {
-    androidSendMessage(data, method)
+    androidSendMessage(data, method);
   } else {
     // no need to send message
   }

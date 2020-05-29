@@ -64,7 +64,9 @@ import {
   isChromeExtension,
   isElectron,
   isWeixinMiniProgram,
-  weixinSendMessage,
+  isAndroidWebview,
+  isIOSWebview,
+  sendMessage,
   buildSearchParams,
   signComplete,
   isValidUrl,
@@ -95,6 +97,7 @@ export default {
       app: null,
       appProfile: {},
       callback: this.$route.query.redirect_uri,
+      callback_method: this.$route.query.callback_method,
       responseType: ['code', 'token'].includes(this.$route.query.response_type)
         ? this.$route.query.response_type
         : 'token',
@@ -145,9 +148,11 @@ export default {
         try {
           this.appProfile = JSON.parse(accounts[0].json_metadata).profile;
           const isWeixin = await isWeixinMiniProgram();
+          const isMobileWebView = isAndroidWebview() || isIOSWebview();
           if (
             !isChromeExtension() &&
             !isWeixin &&
+            !isMobileWebView &&
             (!this.appProfile.redirect_uris.includes(this.callback) || !isValidUrl(this.callback))
           ) {
             this.failed = true;
@@ -164,6 +169,8 @@ export default {
       this.loading = true;
       this.showLoading = true;
       const isWeixin = await isWeixinMiniProgram();
+      const isMobileWebView = isAndroidWebview() || isIOSWebview();
+      const isWebView = isWeixin || isMobileWebView;
 
       try {
         const loginObj = {};
@@ -180,15 +187,15 @@ export default {
           signComplete(this.requestId, null, token);
         }
         if (!isChromeExtension()) {
-          if (isWeixin) {
-            weixinSendMessage({
+          if (isWebView) {
+            sendMessage({
               context: 'login',
               ok: true,
               err: null,
               username: this.username,
               token,
               expired_in: 604800,
-            });
+            }, this.callback_method);
           } else {
             let { callback } = this;
             callback += this.responseType === 'code' ? `?code=${token}` : `?access_token=${token}`;
@@ -212,15 +219,15 @@ export default {
           signComplete(this.requestId, err, null);
         }
         this.loading = false;
-        if (isWeixin) {
-          weixinSendMessage({
+        if (isWebView) {
+          sendMessage({
             context: 'login',
             ok: false,
             err,
             username: this.username,
             token: null,
             expired_in: null,
-          });
+          }, this.callback_method);
         }
       }
     },

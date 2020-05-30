@@ -80,10 +80,10 @@ function androidSendMessage(data, method) {
 
 function iOSSendMessage(data, method) {
   if (method && data) {
-    if (window.webkit && window.webkit[method]) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[method]) {
       window.webkit.messageHandlers[method].postMessage(data);
     } else {
-      console.error(`webkit object or method ${method} is not defined`);
+      console.error(`webkit object or message handler ${method} is not defined`);
     }
   } else {
     console.error('method and data cannot be empty', method, data);

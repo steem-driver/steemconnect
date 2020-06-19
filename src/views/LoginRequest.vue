@@ -187,7 +187,8 @@ export default {
           signComplete(this.requestId, null, token);
         }
         if (!isChromeExtension()) {
-          if (isWebView) {
+          let { callback } = this;
+          if (!callback && isWebView) {
             sendMessage(
               {
                 context: 'login',
@@ -200,7 +201,6 @@ export default {
               this.callback_method,
             );
           } else {
-            let { callback } = this;
             callback += this.responseType === 'code' ? `?code=${token}` : `?access_token=${token}`;
             callback += `&username=${this.username}`;
             if (this.responseType !== 'code') callback += '&expires_in=604800';
